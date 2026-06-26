@@ -190,139 +190,221 @@ Todos los llamados desde el frontend están en **`frontend/src/App.jsx` línea 3
 ### ¿Qué es Cypress?
 Cypress es una herramienta de testing **E2E (End-to-End)** que permite automatizar pruebas en el navegador. Simula acciones reales del usuario (clicks, escritura, navegación) y valida comportamientos.
 
-### 🚀 Abrir Cypress (Modo Interactivo)
+### ⚠️ Problema Común: "Cannot Connect Base Url"
 
+**Antes (sin `start-server-and-test`):**
 ```bash
-# Terminal 1: Asegúrate que el servidor esté corriendo
+# Terminal 1: Debes iniciar el servidor manualmente
 pnpm run start
 
-# Terminal 2: Abre Cypress en modo interactivo
+# Terminal 2: Luego abrir Cypress
 pnpm run cypress
+# ❌ Si olvidas Terminal 1, Cypress falla con "Cannot Connect Base Url"
 ```
 
-**Esto abrirá:**
-- Una ventana de Cypress con una lista de tests disponibles
-- Interfaz visual donde puedes **ver en tiempo real** qué hace el test
-- Opción de pausar, reanudar y depurar
+**Ahora (con `start-server-and-test` - RECOMENDADO):**
+```bash
+# Una sola línea - ¡Automático!
+pnpm run cypress:open  # O cypress:run para headless
 
-### 📝 Ejecutar Tests de Cypress (Headless)
+# ✅ Cypress inicia el servidor automáticamente
+# ✅ Espera a que esté listo antes de correr tests
+# ✅ Limpia recursos al terminar
+```
+
+### 🚀 Ejecutar Cypress (Dos Opciones)
+
+#### Opción 1: Modo Interactivo (Recomendado para Desarrollo)
 
 ```bash
-# Ejecuta todos los tests sin interfaz gráfica
-pnpm run cypress:run
+npm run cypress:open
 ```
+
+**Esto:**
+- ✅ Inicia el servidor Express automáticamente
+- ✅ Abre interfaz visual de Cypress
+- ✅ Puedes **pausar, depurar y ver en tiempo real**
+
+#### Opción 2: Headless (Para CI/CD)
+
+```bash
+npm run cypress:run
+```
+
+**Esto:**
+- ✅ Ejecuta todos los tests sin interfaz gráfica
+- ✅ Ideal para pipelines de automatización
+- ✅ Genera reportes de resultados
 
 ### 🎯 Archivos de Tests de Cypress
 
-| Ubicación | Descripción |
-|-----------|-------------|
-| `/cypress/e2e/1-getting-started/todo.cy.js` | ✅ Tests de ejemplo (verificar elementos HTML, agregar items) |
-| `/cypress/e2e/2-advanced-examples/` | 📚 Más ejemplos (navegación, almacenamiento, red, etc.) |
-| `/cypress.config.js` | ⚙️ Configuración de Cypress |
+| Ubicación | Descripción | Clean Architecture |
+|-----------|-------------|-------------------|
+| `/cypress/e2e/` | Tests E2E | Casos de uso |
+| `/cypress/support/helpers.js` | **Utilidades compartidas** | **Helpers reutilizables** |
+| `/cypress/support/e2e.js` | Configuración global | Setup & Teardown |
+| `/cypress.config.js` | Configuración centralizada | Separación de responsabilidades |
 
-### 📋 Guía Paso a Paso: Hacer un Test en Cypress
+### 📋 Ejemplo: Test Refactorizado (Clean Code + Clean Architecture)
 
-#### 1️⃣ **Abrir Cypress en modo interactivo**
-```bash
-pnpm run cypress
-```
-
-#### 2️⃣ **Seleccionar un test**
-- En la ventana de Cypress, haz clic en **`todo.cy.js`** (en la carpeta `1-getting-started`)
-- Se abrirá un navegador mostrando el test en ejecución
-
-#### 3️⃣ **Ver el test en acción**
-El test hace lo siguiente:
+**ANTES (código duplicado - MALO):**
 ```javascript
-// Visita la URL
-cy.visit('https://example.cypress.io/todo')
-
-// Verifica que hay 2 items
-cy.get('.todo-list li').should('have.length', 2)
-
-// Verifica el texto del primer item
-cy.get('.todo-list li').first().should('have.text', 'Pay electric bill')
-
-// Verifica el texto del último item
-cy.get('.todo-list li').last().should('have.text', 'Walk the dog')
-
-// Agrega un nuevo item escribiendo "Feed the cat"
-cy.get('[data-test=new-todo]').type('Feed the cat{enter}')
-```
-
-#### 4️⃣ **Entender los comandos de Cypress**
-
-| Comando | Qué hace | Ejemplo |
-|---------|----------|---------|
-| `cy.visit()` | Navega a una URL | `cy.visit('http://localhost:5000')` |
-| `cy.get()` | Selecciona elementos HTML | `cy.get('.product-card')` |
-| `cy.type()` | Escribe texto en un input | `cy.type('JavaScript{enter}')` |
-| `cy.click()` | Hace clic en un elemento | `cy.click()` |
-| `cy.should()` | Valida que algo sea verdadero | `.should('have.text', 'Hola')` |
-| `cy.intercept()` | Intercepta llamadas HTTP | `cy.intercept('GET', '/api/*')` |
-
-#### 5️⃣ **Pausar y Depurar un Test**
-- En Cypress, haz clic en el icono de **pausa** (⏸️) en la barra de herramientas
-- Luego puedes inspeccionar elementos, ver el DOM, etc.
-- Presiona play (▶️) para continuar
-
-### 💡 Crear tu Propio Test para el Carrito
-
-Para crear un test que valide tu carrito de compras, crea un archivo `/cypress/e2e/carrito-test.cy.js`:
-
-```javascript
-describe('Carrito de Compras', () => {
-  beforeEach(() => {
+describe('Carrito - Sin Helpers', () => {
+  it('debe agregar y vaciar carrito', () => {
     cy.visit('http://localhost:5000')
-  })
-
-  it('debe mostrar los productos disponibles', () => {
-    // Verifica que hay 3 tarjetas de productos
-    cy.get('.product-card').should('have.length', 3)
-  })
-
-  it('debe agregar un producto al carrito', () => {
-    // Haz clic en el botón agregar del primer producto
     cy.get('#btn-add-1').click()
-    
-    // Verifica que el carrito ahora tiene 1 item
-    cy.get('#header-cart-count').should('have.text', '1')
-  })
-
-  it('debe calcular el total correctamente', () => {
-    // Agrega 2 productos
-    cy.get('#btn-add-1').click()
+    cy.wait(300)
     cy.get('#btn-add-2').click()
-    
-    // Verifica que el total se muestra correctamente
-    cy.get('.cart-total').should('contain', '$')
-  })
-
-  it('debe persistir el carrito después de recargar', () => {
-    // Agrega un producto
-    cy.get('#btn-add-1').click()
-    
-    // Recarga la página
-    cy.reload()
-    
-    // Verifica que el producto sigue en el carrito
-    cy.get('#header-cart-count').should('have.text', '1')
-  })
-
-  it('debe vaciar el carrito', () => {
-    // Agrega un producto
-    cy.get('#btn-add-1').click()
-    
-    // Haz clic en vaciar carrito
+    cy.wait(300)
+    cy.get('#header-cart-count').should('have.text', '2')
     cy.get('#btn-clear-cart').click()
-    
-    // Verifica que el carrito está vacío
     cy.get('#header-cart-count').should('have.text', '0')
   })
 })
 ```
 
-Luego ejecuta: `pnpm run cypress`
+**DESPUÉS (usando helpers - BIEN):**
+```javascript
+import { addProductsToCart, getCartCount, resetApp } from '../support/helpers'
+
+describe('Carrito de Compras - Clean Architecture', () => {
+  beforeEach(() => {
+    resetApp() // Limpia estado antes de cada test
+  })
+
+  it('debe agregar múltiples productos', () => {
+    addProductsToCart([1, 2, 3]) // Reutilizable
+    getCartCount().should('have.text', '3')
+  })
+
+  it('debe persistir carrito después de recargar', () => {
+    addProductsToCart([1, 2])
+    cy.reload()
+    getCartCount().should('have.text', '2')
+  })
+
+  it('debe vaciar carrito correctamente', () => {
+    addProductsToCart([1])
+    cy.get('[data-testid="btn-clear-cart"]').click()
+    getCartCount().should('have.text', '0')
+  })
+})
+```
+
+### 🧩 Helpers Disponibles (Clean Code)
+
+En `/cypress/support/helpers.js` están implementados:
+
+```javascript
+// Agregar múltiples productos de una vez
+addProductsToCart([1, 2, 3])
+
+// Obtener la cantidad de items en el carrito
+getCartCount().should('have.text', '3')
+
+// Verificar el total del carrito
+verifyCartTotal('$41')
+
+// Esperar a respuesta de API
+waitForApiResponse('POST', '/agregar/*', 200)
+
+// Limpiar datos y resetear app
+resetApp()
+```
+
+**Ventajas:**
+- ✅ Código más limpio y legible
+- ✅ Reutilizable en múltiples tests
+- ✅ Fácil de mantener
+- ✅ Reduce duplicación (DRY principle)
+
+### 🎓 Guía Paso a Paso: Crear un Test Desde Cero
+
+#### 1️⃣ Crea el archivo de test
+```bash
+touch cypress/e2e/carrito.cy.js
+```
+
+#### 2️⃣ Importa helpers y escribe el test
+```javascript
+import { addProductsToCart, getCartCount, resetApp } from '../support/helpers'
+
+describe('Flujo Completo del Carrito', () => {
+  beforeEach(() => {
+    resetApp()
+    cy.visit('/')
+  })
+
+  it('flujo: agregar → calcular total → vaciar', () => {
+    // Arrange: Agregar productos
+    addProductsToCart([1, 2])
+    
+    // Act: Verificar
+    getCartCount().should('have.text', '2')
+    cy.get('[data-testid="cart-total"]').should('contain', '$')
+    
+    // Cleanup: Vaciar
+    cy.get('[data-testid="btn-clear-cart"]').click()
+    getCartCount().should('have.text', '0')
+  })
+})
+```
+
+#### 3️⃣ Ejecuta el test
+```bash
+npm run cypress:open
+
+# Luego selecciona carrito.cy.js en la interfaz
+```
+
+### 🔍 Debugging de Tests
+
+**Pausar un test en medio de la ejecución:**
+```javascript
+it('test con pausa', () => {
+  cy.visit('/')
+  cy.pause() // ⏸️ Detiene aquí
+  cy.get('#btn-add-1').click()
+})
+```
+
+**Ver el estado del DOM en consola:**
+```javascript
+it('inspeccionar elementos', () => {
+  cy.get('#cart').then(($element) => {
+    console.log('HTML del carrito:', $element.html())
+  })
+})
+```
+
+### 📊 Buenas Prácticas (Clean Code + Clean Architecture)
+
+| ✅ BIEN | ❌ MAL |
+|-------|-------|
+| Usar `data-testid` en HTML | Usar selectores frágiles (índices) |
+| Helpers para operaciones repetidas | Código duplicado en cada test |
+| `beforeEach()` para setup | Setup manual en cada test |
+| Nombres descriptivos de tests | Nombres genéricos |
+| Una prueba por comportamiento | Múltiples comportamientos en un test |
+
+### ⚙️ Configuración Mejorada
+
+Tu `cypress.config.js` está configurado con:
+
+```javascript
+// 🕒 Timeouts adecuados
+baseUrl: "http://localhost:5000"
+pageLoadTimeout: 10000 // 10 seg para cargar página
+requestTimeout: 8000   // 8 seg para requests
+defaultCommandTimeout: 5000 // 5 seg para comandos Cypress
+
+// 📹 Screenshots en caso de error
+screenshotOnRunFailure: true
+
+// 🎬 Viewport para mobile testing
+viewportWidth: 720
+viewportHeight: 1280
+```
 
 ---
 
