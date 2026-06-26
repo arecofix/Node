@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+npm-debug.log
+pnpm-lock.yaml
+
+# Database
+database.sqlite
+*.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+frontend/dist/
+public/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+
+# Temporary
+*.tmp
+estufa.txt

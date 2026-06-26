@@ -1,0 +1,4 @@
+allowBuilds:
+  '@scarf/scarf': false
+  cypress: true
+  sqlite3: true

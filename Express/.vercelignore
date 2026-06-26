@@ -1,0 +1,17 @@
+node_modules
+.git
+.env.local
+.env.*.local
+cypress
+e2e
+tests
+test-results
+*.test.js
+*.spec.js
+estufa.txt
+README.md
+.gitignore
+vite.config.js
+vitest.config.js
+playwright.config.js
+cypress.config.js
